@@ -25,6 +25,7 @@ const DocumentViewer = () => {
   const containerRef = useRef(null);
 
   const token = localStorage.getItem('token');
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
     fetchDocument();
@@ -33,7 +34,7 @@ const DocumentViewer = () => {
 
   const fetchDocument = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/docs/${id}`, {
+      const res = await axios.get(`${apiUrl}/api/docs/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setDocument(res.data);
@@ -46,7 +47,7 @@ const DocumentViewer = () => {
 
   const fetchSignatures = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/signatures/${id}`, {
+      const res = await axios.get(`${apiUrl}/api/signatures/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSignatures(res.data);
@@ -94,7 +95,7 @@ const DocumentViewer = () => {
 
   const handleSaveSignature = async () => {
     try {
-      await axios.post('http://localhost:5000/api/signatures', {
+      await axios.post(`${apiUrl}/api/signatures`, {
         documentId: id,
         pageNumber: currentPage,
         x: signaturePosition.x,
@@ -116,7 +117,7 @@ const DocumentViewer = () => {
     if (!signatureText) return;
 
     try {
-      await axios.put(`http://localhost:5000/api/signatures/${signatureId}/sign`, {
+      await axios.put(`${apiUrl}/api/signatures/${signatureId}/sign`, {
         signatureText
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -129,7 +130,7 @@ const DocumentViewer = () => {
 
   const handleGenerateSignedPdf = async () => {
     try {
-      const res = await axios.post(`http://localhost:5000/api/signatures/${id}/generate-signed-pdf`, {}, {
+      const res = await axios.post(`${apiUrl}/api/signatures/${id}/generate-signed-pdf`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSignedPdfPath(res.data.signedPath);
@@ -142,9 +143,9 @@ const DocumentViewer = () => {
 
   const handleDownloadSignedPdf = () => {
     if (signedPdfPath) {
-      window.open(`http://localhost:5000${signedPdfPath}`, '_blank');
+      window.open(`${apiUrl}${signedPdfPath}`, '_blank');
     } else if (document?.signedPath) {
-      window.open(`http://localhost:5000${document.signedPath}`, '_blank');
+      window.open(`${apiUrl}${document.signedPath}`, '_blank');
     }
   };
 
@@ -243,7 +244,7 @@ const DocumentViewer = () => {
                 onMouseLeave={handleMouseUp}
               >
                 <Document
-                  file={`http://localhost:5000/${document?.filepath}`}
+                  file={`${apiUrl}/${document?.filepath}`}
                   onLoadSuccess={onDocumentLoadSuccess}
                 >
                   <Page 

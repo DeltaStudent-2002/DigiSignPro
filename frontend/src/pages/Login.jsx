@@ -23,13 +23,14 @@ const Login = ({ setAuth }) => {
     setLoading(true);
 
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const res = await axios.post(`${apiUrl}/api/auth/login`, {
         email,
         password
       });
 
       localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user', JSON.stringify(res.data));
+      localStorage.setItem('user', JSON.stringify(res.data.user || res.data));
       setAuth(true);
       navigate('/dashboard');
     } catch (err) {

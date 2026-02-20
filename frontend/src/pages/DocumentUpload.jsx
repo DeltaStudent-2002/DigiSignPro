@@ -10,6 +10,7 @@ const DocumentUpload = () => {
   const navigate = useNavigate();
 
   const token = localStorage.getItem('token');
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -44,7 +45,7 @@ const DocumentUpload = () => {
     formData.append('document', file);
 
     try {
-      const res = await axios.post('http://localhost:5000/api/docs/upload', formData, {
+      const res = await axios.post(`${apiUrl}/api/docs/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${token}`

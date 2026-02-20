@@ -36,14 +36,15 @@ const Register = ({ setAuth }) => {
     setLoading(true);
 
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/register', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const res = await axios.post(`${apiUrl}/api/auth/register`, {
         name,
         email,
         password
       });
 
       localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user', JSON.stringify(res.data));
+      localStorage.setItem('user', JSON.stringify(res.data.user || res.data));
       setAuth(true);
       navigate('/dashboard');
     } catch (err) {

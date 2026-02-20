@@ -18,13 +18,15 @@ const PublicSign = () => {
   const [signatureText, setSignatureText] = useState('');
   const [numPages, setNumPages] = useState(null);
 
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
   useEffect(() => {
     fetchSignatureRequest();
   }, [token]);
 
   const fetchSignatureRequest = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/signatures/public/${token}`);
+      const res = await axios.get(`${apiUrl}/api/signatures/public/${token}`);
       setSignatureRequest(res.data);
       setSignerName(res.data.signerName || '');
       setSignerEmail(res.data.signerEmail || '');
@@ -45,7 +47,7 @@ const PublicSign = () => {
     setError('');
 
     try {
-      await axios.post(`http://localhost:5000/api/signatures/public/${token}/sign`, {
+      await axios.post(`${apiUrl}/api/signatures/public/${token}/sign`, {
         signerName,
         signerEmail,
         signatureText
@@ -108,7 +110,7 @@ const PublicSign = () => {
             <h3 className="text-lg font-semibold mb-4">Document Preview</h3>
             <div className="flex justify-center">
               <Document
-                file={`http://localhost:5000/${signatureRequest?.documentId?.filepath}`}
+                file={`${apiUrl}/${signatureRequest?.documentId?.filepath}`}
                 onLoadSuccess={onDocumentLoadSuccess}
               >
                 <Page 
