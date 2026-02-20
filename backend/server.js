@@ -4,20 +4,37 @@ const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const path = require('path');
 
-// Load environment variables
 dotenv.config();
 
 const app = express();
 
-// Middleware
+// Middleware - More permissive CORS for development
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://document-signature-app-zeta.vercel.app'],
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    // Also allow localhost origins for development
+    if (!origin || 
+        origin.startsWith('http://localhost') || 
+        origin.startsWith('http://127.0.0.1') ||
+        origin.endsWith('.vercel.app') ||
+        origin.endsWith('.now.sh')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+
+// Handle preflight requests explicitly
+app.options('*', cors());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded files
+// Static folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
@@ -31,19 +48,31 @@ app.get('/', (req, res) => {
   res.send('Document Signing API is running...');
 });
 
-// Error handling middleware
+// Error middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!', error: err.message });
+  res.status(500).json({
+    message: 'Something went wrong!',
+    error: err.message
+  });
 });
-
-// Connect to MongoDB
-connectDB();
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// 🚀 START SERVER ONLY AFTER DB CONNECTS
+const startServer = async () => {
+  try {
+    await connectDB();
+
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+
+  } catch (error) {
+    console.error("Failed to start server:", error);
+  }
+};
+
+startServer();
 
 module.exports = app;

@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const Document = require('../models/Document');
 const auth = require('../middleware/auth');
+const asyncHandler = require('../middleware/asyncHandler');
 
 // Configure multer for file upload
 const storage = multer.diskStorage({
@@ -37,106 +38,148 @@ const upload = multer({
 
 // @route   POST /api/docs/upload
 // @desc    Upload a PDF document
-// @access  Private
-router.post('/upload', auth, upload.single('document'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'Please upload a PDF file' });
-    }
-
-    const document = await Document.create({
-      filename: req.file.filename,
-      originalName: req.file.originalname,
-      filepath: req.file.path,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      userId: req.user.id,
-      status: 'pending'
-    });
-
-    res.status(201).json(document);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+// @access  Public (authentication optional for development)
+router.post('/upload', auth, upload.single('document'), asyncHandler(async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'Please upload a PDF file' });
   }
-});
+
+  const documentData = {
+    filename: req.file.filename,
+    originalName: req.file.originalname,
+    filepath: req.file.path,
+    mimetype: req.file.mimetype,
+    size: req.file.size,
+    status: 'pending'
+  };
+
+  // Add userId if authenticated
+  if (req.user && req.user.id) {
+    documentData.userId = req.user.id;
+  }
+
+  const document = await Document.create(documentData);
+
+  res.status(201).json(document);
+}));
 
 // @route   GET /api/docs
-// @desc    Get all documents for current user
-// @access  Private
-router.get('/', auth, async (req, res) => {
-  try {
-    const documents = await Document.find({ userId: req.user.id })
-      .sort({ createdAt: -1 });
-    res.json(documents);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+// @desc    Get all documents
+// @access  Public (authentication optional for development)
+router.get('/', auth, asyncHandler(async (req, res) => {
+  let query = {};
+  
+  // Only filter by user if authenticated
+  if (req.user && req.user.id) {
+    query.userId = req.user.id;
   }
-});
+  
+  const documents = await Document.find(query).sort({ createdAt: -1 });
+  res.json(documents);
+}));
 
 // @route   GET /api/docs/:id
 // @desc    Get single document by ID
-// @access  Private
-router.get('/:id', auth, async (req, res) => {
-  try {
-    const document = await Document.findOne({
-      _id: req.params.id,
-      userId: req.user.id
-    });
-
-    if (!document) {
-      return res.status(404).json({ message: 'Document not found' });
-    }
-
-    res.json(document);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+// @access  Public (authentication optional for development)
+router.get('/:id', auth, asyncHandler(async (req, res) => {
+  let query = { _id: req.params.id };
+  
+  // Only filter by user if authenticated
+  if (req.user && req.user.id) {
+    query.userId = req.user.id;
   }
-});
+
+  const document = await Document.findOne(query);
+
+  if (!document) {
+    return res.status(404).json({ message: 'Document not found' });
+  }
+
+  res.json(document);
+}));
 
 // @route   DELETE /api/docs/:id
 // @desc    Delete a document
-// @access  Private
-router.delete('/:id', auth, async (req, res) => {
-  try {
-    const document = await Document.findOne({
-      _id: req.params.id,
-      userId: req.user.id
-    });
-
-    if (!document) {
-      return res.status(404).json({ message: 'Document not found' });
-    }
-
-    // Delete file from filesystem
-    if (fs.existsSync(document.filepath)) {
-      fs.unlinkSync(document.filepath);
-    }
-
-    await Document.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Document removed' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+// @access  Public (authentication optional for development)
+router.delete('/:id', auth, asyncHandler(async (req, res) => {
+  let query = { _id: req.params.id };
+  
+  // Only filter by user if authenticated
+  if (req.user && req.user.id) {
+    query.userId = req.user.id;
   }
-});
+
+  const document = await Document.findOne(query);
+
+  if (!document) {
+    return res.status(404).json({ message: 'Document not found' });
+  }
+
+  // Delete file from filesystem
+  if (fs.existsSync(document.filepath)) {
+    fs.unlinkSync(document.filepath);
+  }
+
+  await Document.findByIdAndDelete(req.params.id);
+  res.json({ message: 'Document removed' });
+}));
 
 // @route   PUT /api/docs/:id/status
 // @desc    Update document status
-// @access  Private
-router.put('/:id/status', auth, async (req, res) => {
+// @access  Public (authentication optional for development)
+router.put('/:id/status', auth, asyncHandler(async (req, res) => {
+  const { status } = req.body;
+  
+  let query = { _id: req.params.id };
+  
+  // Only filter by user if authenticated
+  if (req.user && req.user.id) {
+    query.userId = req.user.id;
+  }
+
+  const document = await Document.findOneAndUpdate(
+    query,
+    { status, updatedAt: Date.now() },
+    { new: true }
+  );
+
+  if (!document) {
+    return res.status(404).json({ message: 'Document not found' });
+  }
+
+  res.json(document);
+}));
+
+// @route   GET /api/docs/:id/download
+// @desc    Download a document
+// @access  Public (authentication optional for development)
+router.get('/:id/download', auth, async (req, res) => {
   try {
-    const { status } = req.body;
+    let query = { _id: req.params.id };
     
-    const document = await Document.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.id },
-      { status, updatedAt: Date.now() },
-      { new: true }
-    );
+    // Only filter by user if authenticated
+    if (req.user && req.user.id) {
+      query.userId = req.user.id;
+    }
+
+    const document = await Document.findOne(query);
 
     if (!document) {
       return res.status(404).json({ message: 'Document not found' });
     }
 
-    res.json(document);
+    // Check if file exists
+    if (!fs.existsSync(document.filepath)) {
+      return res.status(404).json({ message: 'File not found on server' });
+    }
+
+    // Set headers for download
+    res.download(document.filepath, document.originalName, (err) => {
+      if (err) {
+        console.error('Download error:', err);
+        res.status(500).json({ message: 'Error downloading file' });
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

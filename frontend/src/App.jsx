@@ -1,5 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useState } from 'react';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -9,47 +9,44 @@ import PublicSign from './pages/PublicSign';
 import Landing from './pages/Landing';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Authentication temporarily disabled for development
+  // Set to true by default to allow access to all features
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    setIsAuthenticated(!!token);
-  }, []);
-
-  const setAuth = (boolean) => {
-    setIsAuthenticated(boolean);
+  const setAuth = (bool) => {
+    setIsAuthenticated(bool);
   };
 
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
         <Routes>
-          {/* Public Routes */}
+          {/* Public Routes - All accessible without login */}
           <Route 
             path="/" 
             element={<Landing />} 
           />
           <Route 
             path="/login" 
-            element={!isAuthenticated ? <Login setAuth={setAuth} /> : <Navigate to="/dashboard" />} 
+            element={<Login setAuth={setAuth} />} 
           />
           <Route 
             path="/register" 
-            element={!isAuthenticated ? <Register setAuth={setAuth} /> : <Navigate to="/dashboard" />} 
+            element={<Register setAuth={setAuth} />} 
           />
           
-          {/* Protected Routes */}
+          {/* All routes accessible without authentication */}
           <Route 
             path="/dashboard" 
-            element={isAuthenticated ? <Dashboard setAuth={setAuth} /> : <Navigate to="/login" />} 
+            element={<Dashboard setAuth={setAuth} />} 
           />
           <Route 
             path="/upload" 
-            element={isAuthenticated ? <DocumentUpload /> : <Navigate to="/login" />} 
+            element={<DocumentUpload />} 
           />
           <Route 
             path="/document/:id" 
-            element={isAuthenticated ? <DocumentViewer /> : <Navigate to="/login" />} 
+            element={<DocumentViewer />} 
           />
           
           {/* Public Signing Route */}

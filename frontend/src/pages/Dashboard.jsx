@@ -10,7 +10,6 @@ const Dashboard = ({ setAuth }) => {
 
   const token = localStorage.getItem('token');
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
     fetchDocuments();
@@ -18,7 +17,7 @@ const Dashboard = ({ setAuth }) => {
 
   const fetchDocuments = async () => {
     try {
-      const res = await axios.get(`${apiUrl}/api/docs`, {
+      const res = await axios.get('/api/docs', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setDocuments(res.data);
@@ -40,7 +39,7 @@ const Dashboard = ({ setAuth }) => {
     if (!confirm('Are you sure you want to delete this document?')) return;
     
     try {
-      await axios.delete(`${apiUrl}/api/docs/${id}`, {
+      await axios.delete(`/api/docs/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setDocuments(documents.filter(doc => doc._id !== id));
@@ -51,7 +50,7 @@ const Dashboard = ({ setAuth }) => {
 
   const handleDownload = (doc) => {
     if (doc.signedPath) {
-      window.open(`${apiUrl}${doc.signedPath}`, '_blank');
+      window.open(doc.signedPath, '_blank');
     } else {
       alert('Signed PDF not available yet. Please generate and sign the document first.');
     }
