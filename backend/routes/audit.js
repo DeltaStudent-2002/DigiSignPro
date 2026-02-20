@@ -12,7 +12,7 @@ router.use(auditMiddleware);
 // @route   GET /api/audit/:fileId
 // @desc    Get audit trail for a document
 // @access  Private
-router.get('/:fileId', async (req, res) => {
+router.get('/:fileId', async (req, res, next) => {
   try {
     const document = await Document.findById(req.params.fileId);
     if (!document) {
@@ -46,14 +46,14 @@ router.get('/:fileId', async (req, res) => {
 
     res.json(auditTrail);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 });
 
 // @route   GET /api/audit
 // @desc    Get all audit trails for user's documents
 // @access  Private
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
   try {
     const documents = await Document.find({ userId: req.user.id })
       .sort({ updatedAt: -1 });
@@ -77,8 +77,13 @@ router.get('/', async (req, res) => {
 
     res.json(auditTrails);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 });
+
+// Error handling wrapper for async route handlers
+const asyncHandler = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
 
 module.exports = router;
