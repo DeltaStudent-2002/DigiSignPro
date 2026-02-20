@@ -7,9 +7,6 @@ const path = require('path');
 // Load environment variables
 dotenv.config();
 
-// Connect to MongoDB
-connectDB();
-
 const app = express();
 
 // Middleware
@@ -36,6 +33,9 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: 'Something went wrong!', error: err.message });
 });
+
+// Connect to MongoDB
+connectDB();
 
 const PORT = process.env.PORT || 5000;
 

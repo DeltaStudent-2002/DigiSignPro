@@ -21,6 +21,7 @@ const DocumentViewer = () => {
   const [signerEmail, setSignerEmail] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [signedPdfPath, setSignedPdfPath] = useState(null);
   const containerRef = useRef(null);
 
   const token = localStorage.getItem('token');
@@ -131,10 +132,19 @@ const DocumentViewer = () => {
       const res = await axios.post(`http://localhost:5000/api/signatures/${id}/generate-signed-pdf`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      setSignedPdfPath(res.data.signedPath);
       alert('Signed PDF generated successfully!');
       fetchDocument();
     } catch (err) {
       alert('Failed to generate signed PDF');
+    }
+  };
+
+  const handleDownloadSignedPdf = () => {
+    if (signedPdfPath) {
+      window.open(`http://localhost:5000${signedPdfPath}`, '_blank');
+    } else if (document?.signedPath) {
+      window.open(`http://localhost:5000${document.signedPath}`, '_blank');
     }
   };
 
@@ -172,6 +182,14 @@ const DocumentViewer = () => {
             <p className="text-sm text-gray-500">Status: {document?.status}</p>
           </div>
           <div className="flex gap-2">
+            {(signedPdfPath || document?.signedPath) && (
+              <button
+                onClick={handleDownloadSignedPdf}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                Download Signed PDF
+              </button>
+            )}
             <button
               onClick={handleGenerateSignedPdf}
               className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"

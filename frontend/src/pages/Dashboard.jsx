@@ -48,6 +48,14 @@ const Dashboard = ({ setAuth }) => {
     }
   };
 
+  const handleDownload = (doc) => {
+    if (doc.signedPath) {
+      window.open(`http://localhost:5000${doc.signedPath}`, '_blank');
+    } else {
+      alert('Signed PDF not available yet. Please generate and sign the document first.');
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
@@ -151,6 +159,14 @@ const Dashboard = ({ setAuth }) => {
                       {new Date(doc.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {doc.signedPath && (
+                        <button
+                          onClick={() => handleDownload(doc)}
+                          className="text-green-600 hover:text-green-900 mr-4"
+                        >
+                          Download
+                        </button>
+                      )}
                       <button
                         onClick={() => navigate(`/document/${doc._id}`)}
                         className="text-blue-600 hover:text-blue-900 mr-4"

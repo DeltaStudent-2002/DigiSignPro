@@ -45,7 +45,7 @@ const Register = ({ setAuth }) => {
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data));
       setAuth(true);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
     } finally {
