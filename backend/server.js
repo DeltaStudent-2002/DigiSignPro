@@ -16,7 +16,7 @@ const app = express();
 // Allow localhost + all Vercel preview deployments
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://document-signature-app-zeta.vercel.app'
+  'https://document-signature-app-7y7i.vercel.app/'
 ];
 
 app.use(cors({
