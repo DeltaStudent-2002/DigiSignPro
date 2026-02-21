@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 const asyncHandler = require('../middleware/asyncHandler');
+const connectDB = require('../config/db');
 
 // Generate JWT Token
 const generateToken = (id) => {
@@ -12,10 +14,17 @@ const generateToken = (id) => {
   });
 };
 
+// Helper function to check if DB is connected
+const isDBConnected = () => mongoose.connection.readyState === 1;
+
 // @route   POST /api/auth/register
 // @desc    Register a new user
 // @access  Public
 router.post('/register', asyncHandler(async (req, res) => {
+  if (!isDBConnected()) {
+    return res.status(503).json({ message: 'Database service unavailable' });
+  }
+
   const { name, email, password } = req.body;
 
   // Check if user exists
@@ -45,6 +54,10 @@ router.post('/register', asyncHandler(async (req, res) => {
 // @desc    Authenticate user & get token
 // @access  Public
 router.post('/login', asyncHandler(async (req, res) => {
+  if (!isDBConnected()) {
+    return res.status(503).json({ message: 'Database service unavailable' });
+  }
+
   const { email, password } = req.body;
 
   // Check for user email
@@ -66,6 +79,10 @@ router.post('/login', asyncHandler(async (req, res) => {
 // @desc    Get current user
 // @access  Private
 router.get('/me', auth, asyncHandler(async (req, res) => {
+  if (!isDBConnected()) {
+    return res.status(503).json({ message: 'Database service unavailable' });
+  }
+  
   const user = await User.findById(req.user.id).select('-password');
   res.json(user);
 }));

@@ -8,44 +8,43 @@ dotenv.config();
 
 const app = express();
 
-// Middleware - More permissive CORS for development
+// ✅ Connect DB (serverless-safe) - only in non-serverless or when not in test
+if (process.env.NODE_ENV !== 'test') {
+  connectDB();
+}
+
+// ✅ CORS (allow all for single deployment)
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    // Also allow localhost origins for development
-    if (!origin || 
-        origin.startsWith('http://localhost') || 
-        origin.startsWith('http://127.0.0.1') ||
-        origin.endsWith('.vercel.app') ||
-        origin.endsWith('.now.sh')) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  origin: true,
+  methods: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'],
+  credentials: true
 }));
 
-// Handle preflight requests explicitly
 app.options('*', cors());
 
+// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static folder
+// Static folders
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Routes
+// API Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/docs', require('./routes/documents'));
 app.use('/api/signatures', require('./routes/signatures'));
 app.use('/api/audit', require('./routes/audit'));
 
-// Root route
-app.get('/', (req, res) => {
-  res.send('Document Signing API is running...');
+// Serve frontend for all non-API routes (SPA support)
+app.get('*', (req, res) => {
+  // If it's an API request that wasn't matched, return 404
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ message: 'API endpoint not found' });
+  }
+  
+  // Serve frontend index.html for all other routes (SPA)
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Error middleware
@@ -59,20 +58,12 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-// 🚀 START SERVER ONLY AFTER DB CONNECTS
-const startServer = async () => {
-  try {
-    await connectDB();
-
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-
-  } catch (error) {
-    console.error("Failed to start server:", error);
-  }
-};
-
-startServer();
+// ✅ For local development - start server
+// ✅ For Vercel - export app (serverless function handles listening)
+if (process.env.VERCEL !== '1') {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
 
 module.exports = app;

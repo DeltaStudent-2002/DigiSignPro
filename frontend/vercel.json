@@ -1,5 +1,7 @@
 {
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://document-signature-app-p2d8-68ih94r7g.vercel.app/api/$1" },
+    { "source": "/uploads/(.*)", "destination": "https://document-signature-app-p2d8-68ih94r7g.vercel.app/uploads/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

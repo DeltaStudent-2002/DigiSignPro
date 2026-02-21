@@ -129,14 +129,15 @@ const DocumentViewer = () => {
 
   const handleGenerateSignedPdf = async () => {
     try {
-      const res = await axios.post(`/api/signatures/${id}/generate-signed-pdf`, {}, {
+      const res = await axios.post(`/api/signatures/generate-signed-pdf/${id}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSignedPdfPath(res.data.signedPath);
       alert('Signed PDF generated successfully!');
       fetchDocument();
     } catch (err) {
-      alert('Failed to generate signed PDF');
+      const errorMessage = err.response?.data?.message || 'Failed to generate signed PDF';
+      alert(errorMessage);
     }
   };
 
@@ -243,8 +244,9 @@ const DocumentViewer = () => {
                 onMouseLeave={handleMouseUp}
               >
                 <Document
-                  file={document?.filepath}
+                  file={`http://localhost:5000/${document?.filepath}`}
                   onLoadSuccess={onDocumentLoadSuccess}
+                  onLoadError={(error) => console.error('PDF load error:', error)}
                 >
                   <Page 
                     pageNumber={currentPage} 

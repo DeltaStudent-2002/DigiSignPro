@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
+const mongoose = require('mongoose');
 const Signature = require('../models/Signature');
 const Document = require('../models/Document');
 const auth = require('../middleware/auth');
@@ -8,10 +9,17 @@ const asyncHandler = require('../middleware/asyncHandler');
 const { PDFDocument, rgb } = require('pdf-lib');
 const fs = require('fs');
 
+// Helper function to check if DB is connected
+const isDBConnected = () => mongoose.connection.readyState === 1;
+
 // @route   POST /api/signatures
 // @desc    Add a signature to a document
 // @access  Public (authentication optional for development)
 router.post('/', auth, asyncHandler(async (req, res) => {
+  if (!isDBConnected()) {
+    return res.status(503).json({ message: 'Database service unavailable' });
+  }
+
   const { documentId, pageNumber, x, y, width, height, signerName, signerEmail } = req.body;
 
   const document = await Document.findById(documentId);
@@ -48,6 +56,10 @@ router.post('/', auth, asyncHandler(async (req, res) => {
 // @desc    Get all signatures for a document
 // @access  Public (authentication optional for development)
 router.get('/:documentId', auth, asyncHandler(async (req, res) => {
+  if (!isDBConnected()) {
+    return res.status(503).json({ message: 'Database service unavailable' });
+  }
+
   const query = { documentId: req.params.documentId };
   
   // Only filter by signer if authenticated
@@ -63,6 +75,10 @@ router.get('/:documentId', auth, asyncHandler(async (req, res) => {
 // @desc    Sign a document (mark signature as signed)
 // @access  Public (authentication optional for development)
 router.put('/:id/sign', auth, asyncHandler(async (req, res) => {
+  if (!isDBConnected()) {
+    return res.status(503).json({ message: 'Database service unavailable' });
+  }
+
   const { signatureText } = req.body;
 
   const signature = await Signature.findById(req.params.id);
@@ -88,6 +104,10 @@ router.put('/:id/sign', auth, asyncHandler(async (req, res) => {
 // @desc    Get signature request by token (for external signers)
 // @access  Public
 router.get('/public/:token', asyncHandler(async (req, res) => {
+  if (!isDBConnected()) {
+    return res.status(503).json({ message: 'Database service unavailable' });
+  }
+
   const signature = await Signature.findOne({ token: req.params.token })
     .populate('documentId');
 
@@ -102,6 +122,10 @@ router.get('/public/:token', asyncHandler(async (req, res) => {
 // @desc    Sign document as external user
 // @access  Public
 router.post('/public/:token/sign', asyncHandler(async (req, res) => {
+  if (!isDBConnected()) {
+    return res.status(503).json({ message: 'Database service unavailable' });
+  }
+
   const { signatureText, signerName, signerEmail } = req.body;
 
   const signature = await Signature.findOne({ token: req.params.token });
@@ -129,10 +153,14 @@ router.post('/public/:token/sign', asyncHandler(async (req, res) => {
   res.json({ message: 'Document signed successfully', signature });
 }));
 
-// @route   POST /api/signatures/:id/generate-signed-pdf
+// @route   POST /api/signatures/:documentId/generate-signed-pdf
 // @desc    Generate signed PDF with embedded signatures
 // @access  Public (authentication optional for development)
-router.post('/:documentId/generate-signed-pdf', auth, asyncHandler(async (req, res) => {
+router.post('/generate-signed-pdf/:documentId', auth, asyncHandler(async (req, res) => {
+  if (!isDBConnected()) {
+    return res.status(503).json({ message: 'Database service unavailable' });
+  }
+
   const document = await Document.findById(req.params.documentId);
   if (!document) {
     return res.status(404).json({ message: 'Document not found' });

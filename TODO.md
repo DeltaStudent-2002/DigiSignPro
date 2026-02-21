@@ -1,129 +1,53 @@
-# Document Signing Application - 2-Week Build Plan
+# Project Restructuring Plan
 
-## Project Overview
-Build a full-featured MERN stack document signing application with PDF upload, signature placement, and audit trail functionality.
+## Information Gathered:
 
-## Week 1: Core Features, Backend & Frontend Setup
+### Current Structure:
+- **Backend**: Express.js + MongoDB (Mongoose) - deployed separately on Vercel
+- **Frontend**: React + Vite - deployed separately on Vercel  
+- **Database**: MongoDB Atlas with connection issues in serverless environment
 
-### Day 1: Project Setup & Repo Initialization
-- [x] Create GitHub repo structure (if needed)
-- [x] Initialize MERN folder structure (backend/, frontend/)
-- [x] Setup Node.js + Express server
-- [x] Initialize React app with Tailwind CSS
-- [x] Setup MongoDB connection with Mongoose
-- [x] Install dependencies: multer, pdf-lib, bcrypt, jwt, cors, dotenv
+### Key Files Analyzed:
+- `backend/server.js`: Express server with API routes, static file serving
+- `backend/config/db.js`: MongoDB connection with retry logic
+- `frontend/vite.config.js`: Vite config with proxy for dev
+- `frontend/src/axios.js`: Axios with hardcoded Vercel URL
+- `backend/routes/auth.js`: Auth routes with DB connection checks
+- `backend/vercel.json`: Vercel config for serverless functions
+- `frontend/vercel.json`: Vercel config for frontend
 
-### Day 2: Auth System (JWT)
-- [x] Create User model (name, email, password)
-- [x] Create auth routes: /register, /login
-- [x] Implement JWT authentication
-- [x] Implement bcrypt password hashing
-- [x] Create auth middleware for protected routes
+### Issues Identified:
+1. **Separate Deployments**: Frontend and backend deployed separately
+2. **Database Connectivity**: MongoDB connection fails in serverless environment
+3. **Hardcoded URLs**: Frontend has hardcoded backend URL in axios.js
+4. **CORS Issues**: CORS configured for specific origins only
 
-### Day 3: File Upload API
-- [x] Setup Multer for PDF uploads
-- [x] Create Document model (filename, filepath, userId, uploadDate)
-- [x] Create upload route: POST /api/docs/upload
-- [x] Create get documents route: GET /api/docs
+## Plan:
 
-### Day 4: View & List Documents
-- [x] Create API to fetch user's uploaded files
-- [x] Create document dashboard UI
-- [x] Implement PDF preview using react-pdf
-- [x] Add file listing with metadata
+### Phase 1: Restructure Project for Single Deployment
+- [ ] 1. Create new `public` folder in backend for frontend build files
+- [ ] 2. Update backend/server.js to serve frontend static files
+- [ ] 3. Configure Vite for production build output to backend/public
+- [ ] 4. Update backend/package.json with frontend build script
 
-### Day 5: Signature Schema & Logic
-- [x] Create Signature model (fileId, coordinates, signer, status)
-- [x] Create route to save signature positions (x, y)
-- [x] Implement signature placeholder rendering on PDF
+### Phase 2: Fix API and Database Issues
+- [ ] 5. Update axios.js to use relative API paths
+- [ ] 6. Fix CORS configuration to work with single deployment
+- [ ] 7. Improve database connectivity for serverless environment
+- [ ] 8. Update vite.config.js for production proxy
 
-### Day 6: PDF Editor Integration
-- [x] Add drag-and-drop signature field (HTML overlay)
-- [x] Save coordinates relative to PDF page
-- [x] Create route: POST /api/signatures
+### Phase 3: Deployment Configuration
+- [ ] 9. Update vercel.json for combined deployment
+- [ ] 10. Create .env.example for environment variables
 
-### Day 7: Buffer / Testing
-- [x] Debug UI and backend integration
-- [x] Write Postman tests for API endpoints
+## Dependent Files to be Edited:
+- `backend/server.js` - Add static file serving for frontend
+- `backend/package.json` - Add build script
+- `frontend/vite.config.js` - Update output path
+- `frontend/src/axios.js` - Use relative API paths
+- `backend/vercel.json` - Update for combined deployment
 
-## Week 2: Signature Rendering, Sharing & Polish
-
-### Day 8: Generate Final Signed PDF
-- [x] Use PDF-Lib to embed signature text/image
-- [x] Create signed PDF generation route
-- [x] Export signed version to disk
-
-### Day 9: Email + Public Signature Links
-- [x] Generate tokenized URL for external signature
-- [x] Implement email link sending (nodemailer or mock)
-- [x] Create public signing page for external users
-
-### Day 10: Audit Trail
-- [x] Implement audit logging middleware
-- [x] Log who signed, when, and IP address
-- [x] Create route: GET /api/audit/:fileId
-
-## Project Structure
-```
-Project intern/
-├── backend/
-│   ├── config/
-│   │   └── db.js
-│   ├── middleware/
-│   │   ├── auth.js
-│   │   └── audit.js
-│   ├── models/
-│   │   ├── User.js
-│   │   ├── Document.js
-│   │   └── Signature.js
-│   ├── routes/
-│   │   ├── auth.js
-│   │   ├── documents.js
-│   │   ├── signatures.js
-│   │   └── audit.js
-│   ├── uploads/
-│   ├── server.js
-│   └── package.json
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── pages/
-│   │   │   ├── Login.jsx
-│   │   │   ├── Register.jsx
-│   │   │   ├── Dashboard.jsx
-│   │   │   ├── DocumentUpload.jsx
-│   │   │   ├── DocumentViewer.jsx
-│   │   │   └── PublicSign.jsx
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   ├── tailwind.config.js
-│   └── package.json
-├── TODO.md
-└── README.md
-```
-
-## Dependencies
-
-### Backend
-- express
-- mongoose
-- multer
-- pdf-lib
-- bcryptjs
-- jsonwebtoken
-- cors
-- dotenv
-- nodemailer
-
-### Frontend
-- react
-- react-dom
-- react-router-dom
-- react-pdf
-- axios
-- tailwindcss
-- postcss
-- autoprefixer
-- pdfjs-dist
-
-## All Tasks Completed! ✅
+## Followup Steps:
+1. Run local test with combined server
+2. Deploy to Vercel and verify
+3. Test all functionality

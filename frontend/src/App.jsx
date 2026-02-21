@@ -9,9 +9,11 @@ import PublicSign from './pages/PublicSign';
 import Landing from './pages/Landing';
 
 function App() {
-  // Authentication temporarily disabled for development
-  // Set to true by default to allow access to all features
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  // Check for token on initial load
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    const token = localStorage.getItem('token');
+    return !!token;
+  });
 
   const setAuth = (bool) => {
     setIsAuthenticated(bool);

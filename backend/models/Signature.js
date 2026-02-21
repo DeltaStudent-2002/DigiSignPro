@@ -9,15 +9,15 @@ const signatureSchema = new mongoose.Schema({
   signerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false
   },
   signerEmail: {
     type: String,
-    required: true
+    required: false
   },
   signerName: {
     type: String,
-    required: true
+    required: false
   },
   pageNumber: {
     type: Number,

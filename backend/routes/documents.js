@@ -3,9 +3,13 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const mongoose = require('mongoose');
 const Document = require('../models/Document');
 const auth = require('../middleware/auth');
 const asyncHandler = require('../middleware/asyncHandler');
+
+// Helper function to check if DB is connected
+const isDBConnected = () => mongoose.connection.readyState === 1;
 
 // Configure multer for file upload
 const storage = multer.diskStorage({
@@ -40,6 +44,10 @@ const upload = multer({
 // @desc    Upload a PDF document
 // @access  Public (authentication optional for development)
 router.post('/upload', auth, upload.single('document'), asyncHandler(async (req, res) => {
+  if (!isDBConnected()) {
+    return res.status(503).json({ message: 'Database service unavailable' });
+  }
+
   if (!req.file) {
     return res.status(400).json({ message: 'Please upload a PDF file' });
   }
@@ -67,6 +75,10 @@ router.post('/upload', auth, upload.single('document'), asyncHandler(async (req,
 // @desc    Get all documents
 // @access  Public (authentication optional for development)
 router.get('/', auth, asyncHandler(async (req, res) => {
+  if (!isDBConnected()) {
+    return res.status(503).json({ message: 'Database service unavailable' });
+  }
+
   let query = {};
   
   // Only filter by user if authenticated
@@ -82,6 +94,10 @@ router.get('/', auth, asyncHandler(async (req, res) => {
 // @desc    Get single document by ID
 // @access  Public (authentication optional for development)
 router.get('/:id', auth, asyncHandler(async (req, res) => {
+  if (!isDBConnected()) {
+    return res.status(503).json({ message: 'Database service unavailable' });
+  }
+
   let query = { _id: req.params.id };
   
   // Only filter by user if authenticated
@@ -102,6 +118,10 @@ router.get('/:id', auth, asyncHandler(async (req, res) => {
 // @desc    Delete a document
 // @access  Public (authentication optional for development)
 router.delete('/:id', auth, asyncHandler(async (req, res) => {
+  if (!isDBConnected()) {
+    return res.status(503).json({ message: 'Database service unavailable' });
+  }
+
   let query = { _id: req.params.id };
   
   // Only filter by user if authenticated
@@ -128,6 +148,10 @@ router.delete('/:id', auth, asyncHandler(async (req, res) => {
 // @desc    Update document status
 // @access  Public (authentication optional for development)
 router.put('/:id/status', auth, asyncHandler(async (req, res) => {
+  if (!isDBConnected()) {
+    return res.status(503).json({ message: 'Database service unavailable' });
+  }
+
   const { status } = req.body;
   
   let query = { _id: req.params.id };
@@ -155,6 +179,10 @@ router.put('/:id/status', auth, asyncHandler(async (req, res) => {
 // @access  Public (authentication optional for development)
 router.get('/:id/download', auth, async (req, res) => {
   try {
+    if (!isDBConnected()) {
+      return res.status(503).json({ message: 'Database service unavailable' });
+    }
+
     let query = { _id: req.params.id };
     
     // Only filter by user if authenticated
