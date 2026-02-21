@@ -21,7 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
-app.use('/api/auth', require('./routes/auth'));
+
 app.use('/api/docs', require('./routes/documents'));
 app.use('/api/signatures', require('./routes/signatures'));
 app.use('/api/audit', require('./routes/audit'));
