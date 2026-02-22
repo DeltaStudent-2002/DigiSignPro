@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const path = require('path');
+const fs = require('fs');
 
 dotenv.config();
 
@@ -26,9 +27,33 @@ app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static folders
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use(express.static(path.join(__dirname, 'public')));
+// Static folders - use different paths for different platforms
+let uploadsPath;
+let publicPath;
+
+if (process.env.RENDER) {
+  uploadsPath = '/app/uploads';
+  publicPath = path.join(__dirname, '../frontend/dist');
+} else if (process.env.NETLIFY) {
+  uploadsPath = '/tmp/uploads';
+  publicPath = path.join(__dirname, 'public');
+} else if (process.env.VERCEL) {
+  uploadsPath = '/tmp/uploads';
+  publicPath = path.join(__dirname, '../frontend/dist');
+} else {
+  uploadsPath = path.join(__dirname, 'uploads');
+  publicPath = path.join(__dirname, 'public');
+}
+
+// Serve uploads if directory exists
+if (fs.existsSync(uploadsPath)) {
+  app.use('/uploads', express.static(uploadsPath));
+}
+
+// Serve frontend static files only if they exist
+if (fs.existsSync(publicPath)) {
+  app.use(express.static(publicPath));
+}
 
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -43,8 +68,15 @@ app.get('*', (req, res) => {
     return res.status(404).json({ message: 'API endpoint not found' });
   }
   
-  // Serve frontend index.html for all other routes (SPA)
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  // Serve frontend index.html if it exists, otherwise return a message
+  if (fs.existsSync(path.join(publicPath, 'index.html'))) {
+    res.sendFile(path.join(publicPath, 'index.html'));
+  } else {
+    res.json({ 
+      message: 'Backend is running. Frontend not deployed. Deploy frontend separately or use combined deployment.',
+      endpoints: ['/api/auth', '/api/docs', '/api/signatures', '/api/audit']
+    });
+  }
 });
 
 // Error middleware
@@ -60,7 +92,9 @@ const PORT = process.env.PORT || 5000;
 
 // ✅ For local development - start server
 // ✅ For Vercel - export app (serverless function handles listening)
-if (process.env.VERCEL !== '1') {
+// ✅ For Render - export app (Render handles listening)
+// ✅ For Netlify - export app (Netlify handles listening)
+if (process.env.VERCEL !== '1' && process.env.RENDER !== 'true' && process.env.NETLIFY !== 'true') {
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });

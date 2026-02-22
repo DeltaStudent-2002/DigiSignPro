@@ -14,7 +14,15 @@ const isDBConnected = () => mongoose.connection.readyState === 1;
 // Configure multer for file upload
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadDir = 'uploads/';
+    // Use different paths for different platforms
+    let uploadDir;
+    if (process.env.RENDER) {
+      uploadDir = '/app/uploads';
+    } else if (process.env.NETLIFY || process.env.VERCEL) {
+      uploadDir = '/tmp/uploads';
+    } else {
+      uploadDir = 'uploads/';
+    }
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
