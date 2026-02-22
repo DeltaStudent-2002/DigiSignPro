@@ -13,6 +13,7 @@ const connectDB = async () => {
   }
 
   try {
+<<<<<<< HEAD
     // Use environment variable or default to MongoDB Atlas connection
     const mongoURI = process.env.MONGODB_URI;
     
@@ -57,10 +58,15 @@ const connectDB = async () => {
     });
     
     isConnected = true;
+=======
+    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/document-signing';
+    const conn = await mongoose.connect(mongoURI);
+>>>>>>> 97d70facf11e2b1361ec796dab87f0f1fc1c932e
     console.log(`MongoDB Connected: ${conn.connection.host}`);
     return conn;
   } catch (error) {
     console.error(`MongoDB Connection Error: ${error.message}`);
+<<<<<<< HEAD
     isConnected = false;
     
     // In serverless, don't retry - just return null
@@ -76,6 +82,10 @@ const connectDB = async () => {
     }, 5000);
     
     return null;
+=======
+    // Don't exit immediately, let the app run but log the error
+    console.log('Warning: App will run without database connection');
+>>>>>>> 97d70facf11e2b1361ec796dab87f0f1fc1c932e
   }
 };
 

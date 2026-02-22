@@ -9,6 +9,7 @@ dotenv.config();
 
 const app = express();
 
+<<<<<<< HEAD
 // ✅ Connect DB (serverless-safe) - only in non-serverless or when not in test
 if (process.env.NODE_ENV !== 'test') {
   connectDB();
@@ -24,6 +25,46 @@ app.use(cors({
 app.options('*', cors());
 
 // Middleware
+=======
+/* =========================
+   CORS CONFIGURATION
+   ========================= */
+
+// Allow localhost + all Vercel preview deployments
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://document-signature-app-7y7i.vercel.app/'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+
+    // Allow requests with no origin (mobile apps, Postman, curl)
+    if (!origin) return callback(null, true);
+
+    // Allow localhost & main production domain
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Allow all Vercel preview deployments
+    if (origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true
+}));
+
+// Handle preflight requests
+app.options('*', cors());
+
+/* =========================
+   MIDDLEWARE
+   ========================= */
+
+>>>>>>> 97d70facf11e2b1361ec796dab87f0f1fc1c932e
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -31,6 +72,7 @@ app.use(express.urlencoded({ extended: true }));
 let uploadsPath;
 let publicPath;
 
+<<<<<<< HEAD
 if (process.env.RENDER) {
   uploadsPath = '/app/uploads';
   publicPath = path.join(__dirname, '../frontend/dist');
@@ -57,6 +99,12 @@ if (fs.existsSync(publicPath)) {
 
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
+=======
+/* =========================
+   ROUTES
+   ========================= */
+
+>>>>>>> 97d70facf11e2b1361ec796dab87f0f1fc1c932e
 app.use('/api/docs', require('./routes/documents'));
 app.use('/api/signatures', require('./routes/signatures'));
 app.use('/api/audit', require('./routes/audit'));
@@ -79,7 +127,14 @@ app.get('*', (req, res) => {
   }
 });
 
+<<<<<<< HEAD
 // Error middleware
+=======
+/* =========================
+   ERROR HANDLER
+   ========================= */
+
+>>>>>>> 97d70facf11e2b1361ec796dab87f0f1fc1c932e
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
@@ -88,6 +143,15 @@ app.use((err, req, res, next) => {
   });
 });
 
+<<<<<<< HEAD
+=======
+/* =========================
+   DATABASE CONNECTION
+   ========================= */
+
+connectDB();
+
+>>>>>>> 97d70facf11e2b1361ec796dab87f0f1fc1c932e
 const PORT = process.env.PORT || 5000;
 
 // ✅ For local development - start server
