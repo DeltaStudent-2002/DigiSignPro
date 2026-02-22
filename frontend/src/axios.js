@@ -1,8 +1,15 @@
 import axios from 'axios';
 
 const api = axios.create({
-  // Use relative URL for single deployment, fallback to environment variable
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  // Use environment variable if set, otherwise use relative path
+  // If VITE_API_URL already includes /api, don't add it again
+  baseURL: (() => {
+    const envUrl = import.meta.env.VITE_API_URL || '';
+    if (envUrl.includes('/api')) {
+      return envUrl;
+    }
+    return envUrl ? `${envUrl}/api` : '/api';
+  })(),
   timeout: 30000,
 });
 
