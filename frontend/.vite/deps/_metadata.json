@@ -1,0 +1,73 @@
+{
+  "hash": "27aeffce",
+  "configHash": "e13365cb",
+  "lockfileHash": "41df4a0c",
+  "browserHash": "7cdef536",
+  "optimized": {
+    "@react-oauth/google": {
+      "src": "../../node_modules/@react-oauth/google/dist/index.esm.js",
+      "file": "@react-oauth_google.js",
+      "fileHash": "f07a5d38",
+      "needsInterop": false
+    },
+    "react": {
+      "src": "../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "b553f849",
+      "needsInterop": true
+    },
+    "react-dom": {
+      "src": "../../node_modules/react-dom/index.js",
+      "file": "react-dom.js",
+      "fileHash": "7b2b3f4a",
+      "needsInterop": true
+    },
+    "react/jsx-dev-runtime": {
+      "src": "../../node_modules/react/jsx-dev-runtime.js",
+      "file": "react_jsx-dev-runtime.js",
+      "fileHash": "541ac97a",
+      "needsInterop": true
+    },
+    "react/jsx-runtime": {
+      "src": "../../node_modules/react/jsx-runtime.js",
+      "file": "react_jsx-runtime.js",
+      "fileHash": "b47f4662",
+      "needsInterop": true
+    },
+    "axios": {
+      "src": "../../node_modules/axios/index.js",
+      "file": "axios.js",
+      "fileHash": "e32a5e9e",
+      "needsInterop": false
+    },
+    "react-dom/client": {
+      "src": "../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "c6aa0710",
+      "needsInterop": true
+    },
+    "react-pdf": {
+      "src": "../../node_modules/react-pdf/dist/esm/index.js",
+      "file": "react-pdf.js",
+      "fileHash": "da3f8be2",
+      "needsInterop": false
+    },
+    "react-router-dom": {
+      "src": "../../node_modules/react-router-dom/dist/index.js",
+      "file": "react-router-dom.js",
+      "fileHash": "d24889b9",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-KDUSVCWO": {
+      "file": "chunk-KDUSVCWO.js"
+    },
+    "chunk-OC5S6P4L": {
+      "file": "chunk-OC5S6P4L.js"
+    },
+    "chunk-SNAQBZPT": {
+      "file": "chunk-SNAQBZPT.js"
+    }
+  }
+}

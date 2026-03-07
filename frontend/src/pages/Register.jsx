@@ -36,11 +36,9 @@ const Register = ({ setAuth }) => {
     setLoading(true);
 
     try {
-      // Get base URL from env or use relative path
-      const baseUrl = import.meta.env.VITE_API_URL || '';
-      // Determine the correct API path based on whether baseUrl already includes /api
-      const apiPath = baseUrl.includes('/api') ? '' : '/api';
-      const res = await axios.post(`${baseUrl}${apiPath}/auth/register`, {
+      // Get base URL from env or use default localhost:5001
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+      const res = await axios.post(`${baseUrl}/api/auth/register`, {
         name,
         email,
         password

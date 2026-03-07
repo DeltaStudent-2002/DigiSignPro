@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Document, Page, pdfjs } from 'react-pdf';
 
@@ -8,8 +8,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/$
 
 const DocumentViewer = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const [document, setDocument] = useState(null);
+  const [currentDocument, setCurrentDocument] = useState(null);
   const [signatures, setSignatures] = useState([]);
   const [numPages, setNumPages] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -36,7 +35,7 @@ const DocumentViewer = () => {
       const res = await axios.get(`/api/docs/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setDocument(res.data);
+      setCurrentDocument(res.data);
     } catch (err) {
       setError('Failed to load document');
     } finally {
@@ -105,26 +104,139 @@ const DocumentViewer = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setShowSignatureModal(false);
+      setSignerName('');
+      setSignerEmail('');
       fetchSignatures();
     } catch (err) {
       alert('Failed to add signature');
     }
   };
 
-  const handleSignDocument = async (signatureId) => {
-    const signatureText = prompt('Enter your signature text:');
-    if (!signatureText) return;
-
-    try {
-      await axios.put(`/api/signatures/${signatureId}/sign`, {
-        signatureText
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      fetchSignatures();
-    } catch (err) {
-      alert('Failed to sign');
-    }
+  const handleSignDocument = (signatureId) => {
+    // Create modal element
+    const modalOverlay = document.createElement('div');
+    modalOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+    
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = 'background:white;padding:24px;border-radius:12px;width:90%;max-width:420px;font-family:system-ui,sans-serif;';
+    modalContent.innerHTML = `
+      <h3 style="margin:0 0 16px;font-size:18px;font-weight:600;">Design Your Signature</h3>
+      
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:14px;font-weight:500;margin-bottom:4px;color:#374151;">Signature Text</label>
+        <input type="text" id="sigText" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;box-sizing:border-box;" placeholder="Enter your signature" />
+      </div>
+      
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:14px;font-weight:500;margin-bottom:4px;color:#374151;">Font Family</label>
+        <select id="sigFont" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;box-sizing:border-box;">
+          <option value="Helvetica">Helvetica</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="Courier New">Courier New</option>
+          <option value="Arial">Arial</option>
+        </select>
+      </div>
+      
+      <div style="display:flex;gap:12px;margin-bottom:12px;">
+        <div style="flex:1;">
+          <label style="display:block;font-size:14px;font-weight:500;margin-bottom:4px;color:#374151;">Font Size</label>
+          <input type="number" id="sigSize" value="18" min="10" max="48" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;box-sizing:border-box;" />
+        </div>
+        <div style="flex:1;">
+          <label style="display:block;font-size:14px;font-weight:500;margin-bottom:4px;color:#374151;">Color</label>
+          <input type="color" id="sigColor" value="#000000" style="width:100%;height:38px;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;padding:2px;box-sizing:border-box;" />
+        </div>
+      </div>
+      
+      <div style="display:flex;gap:16px;margin-bottom:12px;">
+        <label style="display:flex;align-items:center;cursor:pointer;">
+          <input type="checkbox" id="sigBold" style="width:16px;height:16px;margin-right:6px;" />
+          <span style="font-size:14px;font-weight:500;">Bold</span>
+        </label>
+        <label style="display:flex;align-items:center;cursor:pointer;">
+          <input type="checkbox" id="sigItalic" style="width:16px;height:16px;margin-right:6px;" />
+          <span style="font-size:14px;font-weight:500;">Italic</span>
+        </label>
+      </div>
+      
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:14px;font-weight:500;margin-bottom:4px;color:#374151;">Preview</label>
+        <div id="sigPreview" style="padding:12px;border:2px dashed #d1d5db;border-radius:6px;background:#f9fafb;text-align:center;min-height:50px;display:flex;align-items:center;justify-content:center;font-family:Helvetica;font-size:18px;color:#000000;">Your signature here</div>
+      </div>
+      
+      <div style="display:flex;gap:8px;">
+        <button id="confirmBtn" style="flex:1;background:#2563eb;color:white;border:none;padding:12px;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;">Sign Document</button>
+        <button id="cancelBtn" style="flex:1;background:#e5e7eb;color:#374151;border:none;padding:12px;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;">Cancel</button>
+      </div>
+    `;
+    
+    modalOverlay.appendChild(modalContent);
+    document.body.appendChild(modalOverlay);
+    
+    // Get elements
+    const sigText = modalContent.querySelector('#sigText');
+    const sigFont = modalContent.querySelector('#sigFont');
+    const sigSize = modalContent.querySelector('#sigSize');
+    const sigColor = modalContent.querySelector('#sigColor');
+    const sigBold = modalContent.querySelector('#sigBold');
+    const sigItalic = modalContent.querySelector('#sigItalic');
+    const sigPreview = modalContent.querySelector('#sigPreview');
+    
+    // Update preview
+    const updatePreview = () => {
+      sigPreview.textContent = sigText.value || 'Your signature here';
+      sigPreview.style.fontFamily = sigFont.value;
+      sigPreview.style.fontSize = sigSize.value + 'px';
+      sigPreview.style.color = sigColor.value;
+      sigPreview.style.fontWeight = sigBold.checked ? 'bold' : 'normal';
+      sigPreview.style.fontStyle = sigItalic.checked ? 'italic' : 'normal';
+    };
+    
+    sigText.addEventListener('input', updatePreview);
+    sigFont.addEventListener('change', updatePreview);
+    sigSize.addEventListener('input', updatePreview);
+    sigColor.addEventListener('input', updatePreview);
+    sigBold.addEventListener('change', updatePreview);
+    sigItalic.addEventListener('change', updatePreview);
+    
+    // Confirm sign
+    modalContent.querySelector('#confirmBtn').addEventListener('click', async () => {
+      const signatureText = sigText.value;
+      if (!signatureText) {
+        alert('Please enter your signature text');
+        return;
+      }
+      
+      const fontFamily = sigFont.value;
+      const fontSize = parseInt(sigSize.value);
+      const color = sigColor.value;
+      const isBold = sigBold.checked;
+      const isItalic = sigItalic.checked;
+      
+      document.body.removeChild(modalOverlay);
+      
+      try {
+        await axios.put(`/api/signatures/${signatureId}/sign`, {
+          signatureText,
+          fontFamily,
+          fontSize,
+          color,
+          isBold,
+          isItalic
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        fetchSignatures();
+        alert('Document signed successfully!');
+      } catch (err) {
+        alert('Failed to sign: ' + (err.response?.data?.message || err.message));
+      }
+    });
+    
+    // Cancel
+    modalContent.querySelector('#cancelBtn').addEventListener('click', () => {
+      document.body.removeChild(modalOverlay);
+    });
   };
 
   const handleGenerateSignedPdf = async () => {
@@ -144,8 +256,8 @@ const DocumentViewer = () => {
   const handleDownloadSignedPdf = () => {
     if (signedPdfPath) {
       window.open(signedPdfPath, '_blank');
-    } else if (document?.signedPath) {
-      window.open(document.signedPath, '_blank');
+    } else if (currentDocument?.signedPath) {
+      window.open(currentDocument.signedPath, '_blank');
     }
   };
 
@@ -175,126 +287,59 @@ const DocumentViewer = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{document?.originalName}</h1>
-            <p className="text-sm text-gray-500">Status: {document?.status}</p>
+            <h1 className="text-2xl font-bold text-gray-900">{currentDocument?.originalName}</h1>
+            <p className="text-sm text-gray-500">Status: {currentDocument?.status}</p>
           </div>
           <div className="flex gap-2">
-            {(signedPdfPath || document?.signedPath) && (
-              <button
-                onClick={handleDownloadSignedPdf}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              >
+            {(signedPdfPath || currentDocument?.signedPath) && (
+              <button onClick={handleDownloadSignedPdf} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
                 Download Signed PDF
               </button>
             )}
-            <button
-              onClick={handleGenerateSignedPdf}
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-            >
+            <button onClick={handleGenerateSignedPdf} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
               Generate Signed PDF
             </button>
-            <Link
-              to="/"
-              className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-            >
-              Back
-            </Link>
+            <Link to="/" className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">Back</Link>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+      <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* PDF Viewer */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow p-4">
-              {/* Page Navigation */}
               <div className="flex justify-between items-center mb-4">
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage <= 1}
-                  className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-                >
-                  Previous
-                </button>
+                <button onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage <= 1} className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">Previous</button>
                 <span>Page {currentPage} of {numPages}</span>
-                <button
-                  onClick={() => setCurrentPage(Math.min(numPages, currentPage + 1))}
-                  disabled={currentPage >= numPages}
-                  className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
-                >
-                  Next
-                </button>
+                <button onClick={() => setCurrentPage(Math.min(numPages, currentPage + 1))} disabled={currentPage >= numPages} className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50">Next</button>
               </div>
 
-              {/* PDF Container */}
-              <div 
-                ref={containerRef}
-                className="relative cursor-crosshair"
-                onClick={(e) => {
-                  if (!showSignatureModal) handleAddSignature(e);
-                }}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-              >
-                <Document
-                  file={`http://localhost:5001/${document?.filepath}`}
-                  onLoadSuccess={onDocumentLoadSuccess}
-                  onLoadError={(error) => console.error('PDF load error:', error)}
-                >
-                  <Page 
-                    pageNumber={currentPage} 
-                    width={600}
-                    renderAnnotationLayer={false}
-                    renderTextLayer={false}
-                  />
+              <div ref={containerRef} className="relative cursor-crosshair" onClick={(e) => {!showSignatureModal && handleAddSignature(e)}} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
+                <Document file={`http://localhost:5001/${currentDocument?.filepath}`} onLoadSuccess={onDocumentLoadSuccess} onLoadError={(error) => console.error('PDF load error:', error)}>
+                  <Page pageNumber={currentPage} width={600} renderAnnotationLayer={false} renderTextLayer={false} />
                 </Document>
 
-                {/* Existing Signatures */}
-                {signatures
-                  .filter(sig => sig.pageNumber === currentPage)
-                  .map((sig) => (
-                    <div
-                      key={sig._id}
-                      className={`signature-overlay ${sig.status === 'signed' ? 'signed' : ''}`}
-                      style={{
-                        left: sig.x,
-                        top: sig.y,
-                        width: sig.width,
-                        height: sig.height
-                      }}
-                    >
-                      {sig.status === 'signed' ? (
-                        <span className="text-xs text-green-600">{sig.signatureText}</span>
-                      ) : (
-                        <button
-                          onClick={() => handleSignDocument(sig._id)}
-                          className="text-xs bg-blue-600 text-white px-2 py-1 rounded"
-                        >
-                          Sign
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                {signatures.filter(sig => sig.pageNumber === currentPage).map((sig) => (
+                  <div key={sig._id} style={{position:'absolute',left:sig.x,top:sig.y,width:sig.width,height:sig.height,border:sig.status!=='signed'?'1px dashed blue':'none',cursor:sig.status!=='signed'?'pointer':'default'}}>
+                    {sig.status === 'signed' ? (
+                      <span style={{
+                        fontFamily: sig.fontFamily || 'Helvetica',
+                        fontSize: (sig.fontSize || 16) + 'px',
+                        color: sig.color || '#000000',
+                        fontWeight: sig.isBold ? 'bold' : 'normal',
+                        fontStyle: sig.isItalic ? 'italic' : 'normal'
+                      }}>{sig.signatureText}</span>
+                    ) : (
+                      <button onClick={() => handleSignDocument(sig._id)} className="text-xs bg-blue-600 text-white px-2 py-1 rounded">Sign</button>
+                    )}
+                  </div>
+                ))}
 
-                {/* New Signature Placeholder */}
                 {showSignatureModal && (
-                  <div
-                    className="signature-overlay"
-                    style={{
-                      left: signaturePosition.x,
-                      top: signaturePosition.y,
-                      width: 200,
-                      height: 50
-                    }}
-                    onMouseDown={handleMouseDown}
-                  >
+                  <div style={{position:'absolute',left:signaturePosition.x,top:signaturePosition.y,width:200,height:50,border:'1px dashed blue'}} onMouseDown={handleMouseDown}>
                     <span className="text-xs text-blue-600">Drag to move</span>
                   </div>
                 )}
@@ -302,7 +347,6 @@ const DocumentViewer = () => {
             </div>
           </div>
 
-          {/* Sidebar */}
           <div className="bg-white rounded-lg shadow p-4">
             <h3 className="text-lg font-semibold mb-4">Signatures</h3>
             {signatures.length === 0 ? (
@@ -314,9 +358,7 @@ const DocumentViewer = () => {
                     <p className="font-medium">{sig.signerName}</p>
                     <p className="text-sm text-gray-500">{sig.signerEmail}</p>
                     <p className="text-xs text-gray-400">Page {sig.pageNumber}</p>
-                    <span className={`inline-block px-2 py-1 text-xs rounded mt-2 ${
-                      sig.status === 'signed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                    }`}>
+                    <span className={`inline-block px-2 py-1 text-xs rounded mt-2 ${sig.status === 'signed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                       {sig.status}
                     </span>
                   </div>
@@ -327,48 +369,21 @@ const DocumentViewer = () => {
         </div>
       </main>
 
-      {/* Signature Modal */}
       {showSignatureModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-semibold mb-4">Add Signature Field</h3>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Signer Name
-              </label>
-              <input
-                type="text"
-                value={signerName}
-                onChange={(e) => setSignerName(e.target.value)}
-                className="w-full px-3 py-2 border rounded"
-                placeholder="Enter signer name"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Signer Name</label>
+              <input type="text" value={signerName} onChange={(e) => setSignerName(e.target.value)} className="w-full px-3 py-2 border rounded" placeholder="Enter signer name" />
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Signer Email
-              </label>
-              <input
-                type="email"
-                value={signerEmail}
-                onChange={(e) => setSignerEmail(e.target.value)}
-                className="w-full px-3 py-2 border rounded"
-                placeholder="Enter signer email"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Signer Email</label>
+              <input type="email" value={signerEmail} onChange={(e) => setSignerEmail(e.target.value)} className="w-full px-3 py-2 border rounded" placeholder="Enter signer email" />
             </div>
             <div className="flex gap-2">
-              <button
-                onClick={handleSaveSignature}
-                className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-              >
-                Save
-              </button>
-              <button
-                onClick={() => setShowSignatureModal(false)}
-                className="flex-1 bg-gray-300 text-gray-700 py-2 rounded hover:bg-gray-400"
-              >
-                Cancel
-              </button>
+              <button onClick={handleSaveSignature} className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Save</button>
+              <button onClick={() => setShowSignatureModal(false)} className="flex-1 bg-gray-300 text-gray-700 py-2 rounded hover:bg-gray-400">Cancel</button>
             </div>
           </div>
         </div>
@@ -378,3 +393,4 @@ const DocumentViewer = () => {
 };
 
 export default DocumentViewer;
+

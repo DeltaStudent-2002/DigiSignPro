@@ -9,8 +9,9 @@ export default defineConfig({
     outDir: '../backend/public',
     emptyOutDir: true,
   },
+  cacheDir: '.vite',
   server: {
-    port: 5173,
+    port: 5175,
     proxy: {
       '/api': {
         target: 'http://localhost:5001',
@@ -22,4 +23,8 @@ export default defineConfig({
       },
     },
   },
+  optimizeDeps: {
+    include: ['@react-oauth/google']
+  }
 })
+

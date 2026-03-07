@@ -14,7 +14,8 @@
     "react-router-dom": "^6.20.0",
     "react-pdf": "^7.5.1",
     "axios": "^1.6.2",
-    "pdfjs-dist": "^3.11.174"
+    "pdfjs-dist": "^3.11.174",
+    "@react-oauth/google": "^0.12.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.37",
