@@ -145,12 +145,9 @@ connectDB();
 
 const PORT = process.env.PORT || 5001;
 
-// For local development - start server
-// For Vercel/Render/Netlify - export app (serverless function handles listening)
-if (process.env.VERCEL !== '1' && process.env.RENDER !== 'true' && process.env.NETLIFY !== 'true') {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-}
+// Always listen on the port - works for both local and cloud
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
 module.exports = app;

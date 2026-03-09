@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-mongoose.set('bufferTimeoutMS', 30000);
+mongoose.set('bufferTimeoutMS', 5001);
 
 let isConnected = false;
 

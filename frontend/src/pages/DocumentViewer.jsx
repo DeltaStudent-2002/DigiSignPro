@@ -21,6 +21,7 @@ const DocumentViewer = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [signedPdfPath, setSignedPdfPath] = useState(null);
+  const [pdfPageDimensions, setPdfPageDimensions] = useState({}); // Store actual PDF page dimensions
   const containerRef = useRef(null);
 
   const token = localStorage.getItem('token');
@@ -56,6 +57,17 @@ const DocumentViewer = () => {
 
   const onDocumentLoadSuccess = ({ numPages }) => {
     setNumPages(numPages);
+    // Note: Page dimensions will be retrieved when needed via the Page component's onLoadSuccess
+    // or we can use a different approach
+  };
+
+  // Handler to get page dimensions when each page loads
+  const handlePageLoadSuccess = (page) => {
+    const { width, height, pageNumber } = page;
+    setPdfPageDimensions(prev => ({
+      ...prev,
+      [pageNumber]: { width, height }
+    }));
   };
 
   const handleAddSignature = (e) => {
@@ -93,13 +105,23 @@ const DocumentViewer = () => {
 
   const handleSaveSignature = async () => {
     try {
+      // Get the PDF page dimensions for the current page
+      const pageDimensions = pdfPageDimensions[currentPage] || {};
+      const pdfPageWidth = pageDimensions.width || null;
+      const pdfPageHeight = pageDimensions.height || null;
+      const displayWidth = 600; // This matches the width={600} prop on the Page component
+      
       await axios.post('/api/signatures', {
         documentId: id,
         pageNumber: currentPage,
         x: signaturePosition.x,
         y: signaturePosition.y,
         signerName,
-        signerEmail
+        signerEmail,
+        // Send PDF metadata for accurate coordinate conversion
+        displayWidth,
+        pdfPageWidth,
+        pdfPageHeight
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -319,7 +341,13 @@ const DocumentViewer = () => {
 
               <div ref={containerRef} className="relative cursor-crosshair" onClick={(e) => {!showSignatureModal && handleAddSignature(e)}} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
                 <Document file={`http://localhost:5001/${currentDocument?.filepath}`} onLoadSuccess={onDocumentLoadSuccess} onLoadError={(error) => console.error('PDF load error:', error)}>
-                  <Page pageNumber={currentPage} width={600} renderAnnotationLayer={false} renderTextLayer={false} />
+                  <Page 
+                    pageNumber={currentPage} 
+                    width={600} 
+                    renderAnnotationLayer={false} 
+                    renderTextLayer={false}
+                    onLoadSuccess={handlePageLoadSuccess}
+                  />
                 </Document>
 
                 {signatures.filter(sig => sig.pageNumber === currentPage).map((sig) => (

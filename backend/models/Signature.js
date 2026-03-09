@@ -47,6 +47,44 @@ const signatureSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  // Font styling for signature
+  fontFamily: {
+    type: String,
+    default: 'Helvetica'
+  },
+  fontSize: {
+    type: Number,
+    default: 16
+  },
+  color: {
+    type: String,
+    default: '#000000'
+  },
+  isBold: {
+    type: Boolean,
+    default: false
+  },
+  isItalic: {
+    type: Boolean,
+    default: false
+  },
+  // PDF coordinate system metadata for accurate positioning
+  pdfPageWidth: {
+    type: Number,
+    default: null
+  },
+  pdfPageHeight: {
+    type: Number,
+    default: null
+  },
+  displayWidth: {
+    type: Number,
+    default: null
+  },
+  scaleFactor: {
+    type: Number,
+    default: null
+  },
   status: {
     type: String,
     enum: ['pending', 'signed', 'rejected'],
